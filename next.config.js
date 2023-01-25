@@ -4,8 +4,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'cloudflare-ipfs.com'
+        hostname: 'avatars.githubusercontent.com'
       }
     ]
   }

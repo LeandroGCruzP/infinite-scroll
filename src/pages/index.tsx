@@ -1,60 +1,75 @@
-import axios from 'axios'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import { formatDate } from '~/utils/formatDate'
 
-type UserData = {
-  avatar: string
-  createdAt: string
-  id: string
-  name: string
+type FollowerData = {
+  login: string
+  id: number
+  avatar_url: string
+  type: string
 }
 
 export default function Home () {
-  const [users, setUsers] = useState<UserData[]>()
+  const [followers, setFollowers] = useState<FollowerData[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [isDataEmpty, setIsDatEmpty] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    axios.get('https://637cef8b16c1b892ebc36861.mockapi.io/just-save/users')
-      .then(res => setUsers(res.data))
-  }, [])
+    setIsLoading(true)
+    const ENDPOINT = 'https://api.github.com/users/LeandroGCruzP/followers'
+    const URL_CONFIGURED = `${ENDPOINT}?per_page=8&page=${currentPage}&order=DESC`
+
+    fetch(URL_CONFIGURED)
+      .then(response => response.json())
+      .then((newFollowers: FollowerData[]) => {
+        if (newFollowers.length) {
+          setFollowers(prevFollowers => [...prevFollowers, ...newFollowers])
+        } else {
+          setIsDatEmpty(true)
+        }
+      })
+      .finally(() => setIsLoading(false))
+  }, [currentPage])
+
+  useEffect(() => {
+    const intersectionObserver = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting) && !isDataEmpty) {
+        setCurrentPage(currentPageInsideState => currentPageInsideState + 1)
+      }
+    })
+
+    const liSentinel = document.querySelector('#sentinel') as HTMLLIElement
+
+    if (!isLoading) {
+      intersectionObserver.observe(liSentinel)
+    }
+
+    return () => intersectionObserver.disconnect()
+  }, [isDataEmpty, isLoading])
 
   return (
-    <div className='bg-gray-900 h-full flex justify-center'>
-      <table>
-        <thead>
-          <tr className='text-slate-500'>
-            <th>ID</th>
-            <th>USER</th>
-            <th>CREATED</th>
-            <th />
-          </tr>
-        </thead>
+    <div className='min-h-screen h-full bg-gray-900 text-slate-50'>
+      <span className='text-slate-400 text-2xl flex mb-4 sticky top-0'>
+        Current Page: {currentPage}
+      </span>
 
-        <tbody>
-          {users?.map(user => (
-            <tr key={user.id} className='text-slate-50'>
-              <td className='px-4 py-2'>
-                {user.id}
-              </td>
+      <ul className='flex flex-col gap-4 items-center'>
+        {followers?.map(follower => (
+          <li key={follower.id} className='bg-zinc-700 p-4 rounded-lg w-5/12'>
+            <div className='flex gap-4'>
+              <Image src={follower.avatar_url} alt={follower.login} width={100} height={100} className='rounded-md' />
 
-              <td className='flex items-center gap-2 px-4 py-2'>
-                <Image src={user.avatar} alt={user.name} width={35} height={35} className='rounded-full' />
-                <span>{user.name}</span>
-              </td>
+              <div className='flex flex-col'>
+                <span>{follower.login}</span>
+                <span>{follower.type}</span>
+              </div>
+            </div>
+          </li>
+        ))}
 
-              <td className='px-4 py-2'>
-                {formatDate(user.createdAt)}
-              </td>
+        <li id='sentinel' className='bg-red-600 h-[100px]' />
+      </ul>
 
-              <td className='px-4 py-2'>
-                <button className='bg-green-500 px-2 py-1 rounded-md'>
-                  Edit
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   )
 }

@@ -69,7 +69,6 @@ export default function Home () {
 
         <li id='sentinel' className='bg-red-600 h-[100px]' />
       </ul>
-
     </div>
   )
 }
